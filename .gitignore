@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+__pycache__/
+venv/
+env/
+*.pkl
+*.pyc
+*.pyo
+.DS_Store
+_github_temp/
