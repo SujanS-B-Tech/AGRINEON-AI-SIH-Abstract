@@ -133,10 +133,14 @@ class DiseasePrediction(Base):
     farm_id = Column(Integer, ForeignKey("farms.id", ondelete="CASCADE"), nullable=False)
     image_path = Column(String(500))
     disease_name = Column(String(255))
-    confidence = Column(Numeric(5, 2))
+    confidence = Column(Numeric(5, 2)) # Used for raw model_score
+    confidence_level = Column(String(50))
+    severity = Column(String(50))
     symptoms = Column(JSON)
     prevention = Column(JSON)
     next_steps = Column(JSON)
+    crop_protection = Column(JSON)
+    sources = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
 
     farm = relationship("Farm", back_populates="disease_predictions")

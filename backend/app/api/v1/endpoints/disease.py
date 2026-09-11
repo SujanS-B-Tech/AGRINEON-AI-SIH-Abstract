@@ -32,19 +32,23 @@ async def predict_disease(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Analyze disease
+    # Analyze disease using ML pipeline
     crop_name = farm.current_crop or "unknown"
-    analysis_result = analyze_disease(filename, crop_name)
+    analysis_result = analyze_disease(file_path, crop_name)
     
     # Save to database
     prediction = DiseasePrediction(
         farm_id=farm.id,
         image_path=file_path,
-        disease_name=analysis_result["disease"],
-        confidence=analysis_result["confidence"],
+        disease_name=analysis_result["disease_name"],
+        confidence=analysis_result["model_score"],
+        confidence_level=analysis_result["confidence_level"],
+        severity=analysis_result["severity"],
         symptoms=analysis_result["symptoms"],
         prevention=analysis_result["prevention"],
-        next_steps=analysis_result["next_steps"]
+        next_steps=analysis_result["next_steps"],
+        crop_protection=analysis_result["crop_protection"],
+        sources=analysis_result["sources"]
     )
     
     db.add(prediction)

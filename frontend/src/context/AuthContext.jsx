@@ -43,10 +43,20 @@ export const AuthProvider = ({ children }) => {
       return { success: true }
     } catch (err) {
       console.error(err)
-      return { 
-        success: false, 
-        error: err.response?.data?.detail || 'Login failed. Check your credentials.' 
+      let errorMsg = 'Login failed. Check your credentials.'
+      if (err.response) {
+        if (err.response.status === 422) errorMsg = 'Validation error: Incorrect format.'
+        if (err.response.status === 401) errorMsg = 'Invalid email or password.'
+        if (err.response.status >= 500) errorMsg = 'Server error.'
+        if (err.response.data?.detail) {
+          errorMsg = Array.isArray(err.response.data.detail) 
+            ? err.response.data.detail[0].msg 
+            : err.response.data.detail
+        }
+      } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        errorMsg = 'Backend unavailable or CORS/preflight failure.'
       }
+      return { success: false, error: errorMsg }
     }
   }
 
@@ -60,10 +70,20 @@ export const AuthProvider = ({ children }) => {
       return { success: true }
     } catch (err) {
       console.error(err)
-      return { 
-        success: false, 
-        error: err.response?.data?.detail || 'Registration failed.' 
+      let errorMsg = 'Registration failed.'
+      if (err.response) {
+        if (err.response.status === 422) errorMsg = 'Validation error: Missing or incorrect fields.'
+        if (err.response.status === 400) errorMsg = 'Email already registered or invalid data.'
+        if (err.response.status >= 500) errorMsg = 'Server error.'
+        if (err.response.data?.detail) {
+          errorMsg = Array.isArray(err.response.data.detail) 
+            ? err.response.data.detail[0].msg 
+            : err.response.data.detail
+        }
+      } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        errorMsg = 'Backend unavailable or CORS/preflight failure.'
       }
+      return { success: false, error: errorMsg }
     }
   }
 

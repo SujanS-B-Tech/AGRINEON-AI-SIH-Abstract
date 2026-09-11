@@ -3,7 +3,7 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://agroneon:agroneon_secret@localhost:5432/agroneon_db"
+    DATABASE_URL: str = "sqlite:///./agroneon.db"
     JWT_SECRET: str = "change-this-secret"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 1440

@@ -1,30 +1,38 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, TrendingUp, AlertTriangle, ShieldCheck } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { ArrowLeft, Check, AlertTriangle, ShieldCheck, TrendingUp } from 'lucide-react'
 import DashboardLayout from '../components/DashboardLayout'
+import PageHeader from '../components/PageHeader'
+import RiskIndicator from '../components/RiskIndicator'
+import { Spinner, PageLoadingState } from '../components/LoadingState'
 import api from '../utils/api'
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#9ca3af']
+const RISK_CLASS = {
+  Low:    'badge-success',
+  Medium: 'badge-warning',
+  High:   'badge-danger',
+}
 
 export default function CropDetailsPage() {
-  const { id } = useParams()
+  const { id, cropId } = useParams()
+  const cropIdParam = cropId || id   // support both route param names
   const navigate = useNavigate()
-  const [crop, setCrop] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [selecting, setSelecting] = useState(false)
+  const [crop,     setCrop]     = useState(null)
+  const [loading,  setLoading]  = useState(true)
+  const [selecting,setSelecting]= useState(false)
   const [farmData, setFarmData] = useState(null)
 
-  useEffect(() => {
-    fetchCropDetails()
-  }, [id])
+  useEffect(() => { fetchCropDetails() }, [cropIdParam])
+
 
   const fetchCropDetails = async () => {
     try {
       setLoading(true)
-      const res = await api.get(`/crop/${id}`)
-      setCrop(res.data)
-      const farmRes = await api.get('/farms/')
+      const [cropRes, farmRes] = await Promise.all([
+        api.get(`/crop/${cropIdParam}`),
+        api.get('/farms/'),
+      ])
+      setCrop(cropRes.data)
       if (farmRes.data.length > 0) setFarmData(farmRes.data[0])
     } catch (e) {
       console.error(e)
@@ -38,117 +46,201 @@ export default function CropDetailsPage() {
     if (!farmData) return
     setSelecting(true)
     try {
-      await api.post('/crop/select', { farm_id: farmData.id, recommendation_id: parseInt(id) })
+      await api.post('/crop/select', { farm_id: farmData.id, recommendation_id: parseInt(cropIdParam) })
       navigate('/farming-plan')
     } catch (e) {
-      alert("Failed to plan this crop.")
+      alert('Failed to create farming plan. Please try again.')
       setSelecting(false)
     }
   }
 
-  if (loading || !crop) {
-    return <DashboardLayout><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 m-8" /></DashboardLayout>
-  }
+  if (loading) return <DashboardLayout><PageLoadingState /></DashboardLayout>
+  if (!crop)   return null
 
-  const costData = [
-    { name: 'Seed', value: parseFloat(crop.seed_cost) || 0 },
-    { name: 'Fertilizer', value: parseFloat(crop.fertilizer_cost) || 0 },
-    { name: 'Labour', value: parseFloat(crop.labour_cost) || 0 },
-    { name: 'Irrigation', value: parseFloat(crop.irrigation_cost) || 0 },
-    { name: 'Equipment', value: parseFloat(crop.equipment_cost) || 0 },
-    { name: 'Other', value: parseFloat(crop.other_cost) || 0 },
-  ].filter(c => c.value > 0)
+  const totalCost = [
+    crop.seed_cost, crop.fertilizer_cost, crop.labour_cost,
+    crop.irrigation_cost, crop.equipment_cost, crop.other_cost,
+  ].reduce((s, v) => s + (parseFloat(v) || 0), 0)
 
-  const totalCost = costData.reduce((acc, curr) => acc + curr.value, 0)
   const revenue = parseFloat(crop.estimated_revenue) || 0
-  const profit = parseFloat(crop.estimated_profit) || 0
-  const yieldAmt = parseFloat(crop.expected_yield) || 0
+  const profit  = parseFloat(crop.estimated_profit)  || 0
+  const yieldAmt= parseFloat(crop.expected_yield)    || 0
+
+  const costRows = [
+    { label: 'Seed',       key: 'seed_cost'       },
+    { label: 'Fertilizer', key: 'fertilizer_cost'  },
+    { label: 'Labour',     key: 'labour_cost'      },
+    { label: 'Irrigation', key: 'irrigation_cost'  },
+    { label: 'Equipment',  key: 'equipment_cost'   },
+    { label: 'Other',      key: 'other_cost'       },
+  ].filter(r => parseFloat(crop[r.key]) > 0)
+
+  // Derive risk % for display (use risk_level label → %  approximation)
+  const riskPct = crop.risk_level === 'High' ? 75 : crop.risk_level === 'Medium' ? 45 : 20
 
   return (
-    <DashboardLayout title={crop.crop_name} subtitle="Detailed economics and risk assessment">
-      <div className="space-y-6 max-w-5xl">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900">
-          <ArrowLeft className="w-4 h-4" /> Back to Recommendations
-        </button>
+    <DashboardLayout>
+      {/* Back nav */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to recommendations
+      </button>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <div className="card">
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-primary-500" /> Explainable AI Reasoning</h3>
-              <div className="space-y-3">
-                {crop.explanation.map((reason, i) => (
-                  <div key={i} className="flex gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <Check className="w-5 h-5 text-green-500 shrink-0" />
-                    <p className="text-gray-700 text-sm">{reason}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+      <PageHeader
+        title={crop.crop_name}
+        subtitle="Detailed economics and risk assessment"
+        icon={TrendingUp}
+        badge={
+          <span className={RISK_CLASS[crop.risk_level] || 'badge-neutral'}>
+            {crop.risk_level} Risk
+          </span>
+        }
+        action={
+          <div className="hidden lg:flex items-center gap-2">
+            <span className="text-2xl font-bold text-primary-700">{crop.suitability_score}%</span>
+            <span className="text-xs text-gray-400">Suitability</span>
+          </div>
+        }
+      />
 
-            <div className="card">
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-500" /> Crop Economics (Estimated)</h3>
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={costData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
-                          {costData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                        </Pie>
-                        <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="text-center text-sm font-medium text-gray-600 mt-2">Total Cultivation Cost: ₹{totalCost.toLocaleString()}</div>
-                </div>
-                
-                <div className="space-y-4 justify-center flex flex-col">
-                  <div>
-                    <p className="text-sm text-gray-500">Expected Yield</p>
-                    <p className="text-xl font-bold">{yieldAmt} {crop.yield_unit}</p>
-                  </div>
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-sm text-gray-500">Estimated Revenue</p>
-                    <p className="text-xl font-bold text-blue-600">₹{revenue.toLocaleString()}</p>
-                  </div>
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-sm text-gray-500">Estimated Net Profit</p>
-                    <p className="text-3xl font-extrabold text-green-600">₹{profit.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
+      <div className="grid lg:grid-cols-3 gap-5 max-w-5xl">
+
+        {/* ── Left column ── */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Explainability */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldCheck className="w-4 h-4 text-primary-600" />
+              <h2 className="section-title">Why AGRONEON recommends this</h2>
             </div>
+            <ol className="space-y-3">
+              {crop.explanation.map((reason, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <p className="text-sm text-gray-700 leading-relaxed">{reason}</p>
+                </li>
+              ))}
+            </ol>
+            <p className="text-[11px] text-gray-400 mt-4 pt-3 border-t border-gray-100">
+              Assessment based on farm soil parameters, location, season, and market conditions.
+            </p>
           </div>
 
-          <div className="space-y-6">
-            <div className="card border-t-4 border-t-amber-500 bg-amber-50/20">
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> Risk Assessment</h3>
-              <div className="mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-bold uppercase tracking-wide
-                  ${crop.risk_level === 'High' ? 'bg-red-100 text-red-800' : 
-                    crop.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
-                    'bg-green-100 text-green-800'}`}>
-                  {crop.risk_level} Risk
-                </span>
-              </div>
-              <ul className="space-y-2">
-                {crop.risk_factors.map((risk, i) => (
-                  <li key={i} className="text-sm text-gray-700 flex gap-2"><span className="text-amber-500">•</span> {risk}</li>
-                ))}
-              </ul>
+          {/* Economics */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-emerald-600" />
+              <h2 className="section-title">Crop Economics</h2>
+              <span className="badge-neutral ml-auto">Estimates</span>
             </div>
 
-            <div className="card bg-primary-600 border-none text-white text-center p-8">
-              <h3 className="text-xl font-bold mb-2">Proceed with this crop?</h3>
-              <p className="text-primary-100 text-sm mb-6">Selecting this will generate your daily farming plan and task calendar.</p>
-              <button 
-                onClick={handleSelectCrop}
-                disabled={selecting}
-                className="w-full py-4 bg-white text-primary-700 font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-lg active:scale-95"
-              >
-                {selecting ? 'Creating Plan...' : 'Yes, Plant this Crop'}
-              </button>
+            {/* Metric row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="label-sm">Total Cost</p>
+                <p className="metric-value text-xl mt-1">₹{totalCost.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="label-sm">Expected Yield</p>
+                <p className="metric-value text-xl mt-1">{yieldAmt}<span className="text-sm text-gray-400 font-normal ml-1">{crop.yield_unit}</span></p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3">
+                <p className="label-sm text-blue-600">Est. Revenue</p>
+                <p className="text-xl font-bold text-blue-700 mt-1">₹{revenue.toLocaleString()}</p>
+              </div>
+              <div className="bg-emerald-50 rounded-lg p-3">
+                <p className="label-sm text-emerald-600">Est. Profit</p>
+                <p className="text-xl font-bold text-emerald-700 mt-1">₹{profit.toLocaleString()}</p>
+              </div>
             </div>
+
+            {/* Cost breakdown table */}
+            {costRows.length > 0 && (
+              <>
+                <p className="label-sm mb-2">Cost Breakdown</p>
+                <table className="table-base w-full">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th className="text-right">Amount</th>
+                      <th className="text-right hidden sm:table-cell">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {costRows.map(({ label, key }) => {
+                      const val = parseFloat(crop[key]) || 0
+                      const share = totalCost > 0 ? ((val / totalCost) * 100).toFixed(0) : 0
+                      return (
+                        <tr key={key}>
+                          <td className="font-medium">{label}</td>
+                          <td className="text-right">₹{val.toLocaleString()}</td>
+                          <td className="text-right text-gray-400 hidden sm:table-cell">{share}%</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            <p className="text-[11px] text-gray-400 mt-3 pt-3 border-t border-gray-100">
+              All financial values are estimates based on average regional data and may vary significantly based on local market conditions, crop management, and weather.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Right column ── */}
+        <div className="space-y-5">
+
+          {/* Risk assessment */}
+          <div className="card border-l-4 border-l-amber-400">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <h2 className="section-title">Risk Assessment</h2>
+            </div>
+            <div className="mb-4">
+              <span className={RISK_CLASS[crop.risk_level] || 'badge-neutral'}>
+                {crop.risk_level} Risk
+              </span>
+            </div>
+            <RiskIndicator label="Overall Risk" percentage={riskPct} riskLevel={crop.risk_level?.toLowerCase()} />
+            {crop.risk_factors?.length > 0 && (
+              <ul className="mt-4 space-y-2">
+                {crop.risk_factors.map((risk, i) => (
+                  <li key={i} className="text-xs text-gray-600 flex items-start gap-2">
+                    <span className="text-amber-500 mt-0.5 shrink-0">·</span>
+                    {risk}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Select crop CTA */}
+          <div className="card border border-primary-200 bg-primary-50/30">
+            <h3 className="font-bold text-gray-900 mb-1">Plant this crop?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Selecting this crop will generate a daily farming plan and task calendar for the season.
+            </p>
+            <button
+              onClick={handleSelectCrop}
+              disabled={selecting}
+              className="btn-primary w-full"
+            >
+              {selecting ? (
+                <><Spinner className="text-white" /> Creating Plan...</>
+              ) : (
+                <><Check className="w-4 h-4" /> Yes, Plant this Crop</>
+              )}
+            </button>
+            <p className="text-[11px] text-gray-400 text-center mt-2">
+              A farming plan will be created based on the current season.
+            </p>
           </div>
         </div>
       </div>

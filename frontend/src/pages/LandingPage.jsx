@@ -1,86 +1,148 @@
 import { Link } from 'react-router-dom'
-import { Leaf, Brain, FlaskConical, Stethoscope, TrendingUp, Wifi, Globe, ArrowRight } from 'lucide-react'
+import {
+  Leaf, Brain, FlaskConical, Stethoscope, TrendingUp, Wifi, Globe,
+  ArrowRight, Check, ChevronRight,
+} from 'lucide-react'
 
-const CAPABILITIES = [
-  { icon: Leaf, title: 'Smart Crop Recommendation', desc: 'ML-powered top-3 crop suggestions based on your soil and climate' },
-  { icon: Brain, title: 'Explainable AI', desc: 'Understand exactly why each crop was recommended with SHAP analysis' },
-  { icon: FlaskConical, title: 'Soil Intelligence', desc: 'Upload soil reports and get actionable agricultural insights' },
-  { icon: Stethoscope, title: 'Crop Disease Detection', desc: 'AI-powered disease identification from leaf and crop images' },
-  { icon: TrendingUp, title: 'Profit & Risk Analysis', desc: 'Estimated costs, revenue, profit and risk assessment' },
-  { icon: TrendingUp, title: 'Market Intelligence', desc: 'Compare market prices and find the best selling option' },
-  { icon: Wifi, title: 'Offline-First Support', desc: 'Access saved farm data even without internet connectivity' },
-  { icon: Globe, title: 'Multilingual Assistance', desc: 'Voice and chat support in English and Tamil' },
+const FEATURES = [
+  { icon: Leaf,        title: 'Smart Crop Recommendation',   desc: 'ML-powered recommendations based on your soil, climate, and market conditions' },
+  { icon: Brain,       title: 'Explainable AI',              desc: 'Understand exactly why each recommendation was made — no black boxes' },
+  { icon: FlaskConical,title: 'Soil Intelligence',            desc: 'Upload soil reports and get actionable, farmer-friendly insights' },
+  { icon: Stethoscope, title: 'Crop Disease Detection',      desc: 'AI-powered disease identification from leaf and crop images' },
+  { icon: TrendingUp,  title: 'Market Intelligence',         desc: 'Compare APMC market prices and find the best selling option' },
+  { icon: Globe,       title: 'Multilingual Voice Assistant', desc: 'Voice and chat support in English and Tamil for every farmer' },
 ]
+
+const LIFECYCLE = ['Soil', 'Crop', 'Disease', 'Plan', 'Market', 'Profit']
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen">
-      {/* Hero */}
-      <header className="bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white">
-        <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-soil-50 font-sans">
+      {/* ── Topbar ── */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Leaf className="w-8 h-8" />
-            <span className="text-2xl font-bold">AGRONEON</span>
+            <div className="w-7 h-7 bg-primary-700 rounded-lg flex items-center justify-center">
+              <Leaf className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-primary-900 tracking-wide">AGRONEON</span>
           </div>
-          <Link to="/login" className="text-white/90 hover:text-white font-medium">Login</Link>
-        </nav>
-
-        <div className="max-w-7xl mx-auto px-4 py-20 md:py-32 text-center">
-          <p className="text-primary-200 text-sm font-medium tracking-wider uppercase mb-4">Smart India Hackathon · SIHI018</p>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-4">AGRONEON</h1>
-          <p className="text-xl md:text-2xl text-primary-100 mb-2">Explainable AI-Powered Smart Farming Ecosystem</p>
-          <p className="text-lg text-primary-200 mb-10 max-w-2xl mx-auto">
-            Empowering Every Farmer with Explainable AI – From Soil to Sale.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register" className="btn-primary bg-white text-primary-700 hover:bg-primary-50 text-lg px-8">
-              Get Started <ArrowRight className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+              Sign In
             </Link>
-            <Link to="/login" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-transparent text-white font-semibold rounded-xl border-2 border-white hover:bg-white/10 transition-colors text-lg min-h-[48px]">
-              Login
+            <Link to="/register" className="btn-primary text-sm px-4 py-2 min-h-0">
+              Get Started <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Capabilities */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
-        <h2 className="text-3xl font-bold text-center mb-4">Complete Farming Lifecycle Support</h2>
-        <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-          From soil analysis to market sale — AGRONEON guides you through every step with explainable AI.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {CAPABILITIES.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="card text-center">
-              <div className="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Icon className="w-7 h-7 text-primary-600" />
+      {/* ── Hero ── */}
+      <section className="bg-primary-900 text-white">
+        <div className="max-w-6xl mx-auto px-5 py-16 md:py-24">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left: Brand + CTA */}
+            <div>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest text-primary-300 uppercase mb-4">
+                Smart India Hackathon · SIHI018
+              </span>
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+                Farm Smarter.<br />
+                <span className="text-crop-400">Grow Confident.</span>
+              </h1>
+              <p className="text-primary-200 text-base md:text-lg leading-relaxed mb-8 max-w-md">
+                AGRONEON gives small and marginal farmers practical, explainable AI — from soil analysis to market selection.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/register" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary-800 font-semibold rounded-lg hover:bg-primary-50 transition-colors text-sm">
+                  Start for Free <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link to="/login" className="inline-flex items-center gap-2 px-5 py-2.5 border border-primary-600 text-primary-100 font-semibold rounded-lg hover:border-primary-400 hover:text-white transition-colors text-sm">
+                  Sign In
+                </Link>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
-              <p className="text-sm text-gray-500">{desc}</p>
             </div>
-          ))}
+
+            {/* Right: Feature quick-view */}
+            <div className="space-y-2">
+              {[
+                'AI-powered crop recommendations with explainable reasoning',
+                'Disease detection from crop images',
+                'Market price comparison across APMC markets',
+                'Daily farming plans from verified crop calendars',
+                'Voice assistant in English and Tamil',
+                'Offline-capable with local data caching',
+              ].map((f, i) => (
+                <div key={i} className="flex items-start gap-3 py-2 border-b border-primary-800/50 last:border-b-0">
+                  <span className="w-5 h-5 rounded-full bg-primary-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="w-3 h-3 text-primary-200" />
+                  </span>
+                  <p className="text-sm text-primary-200">{f}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Lifecycle Flow */}
-      <section className="bg-primary-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-8">Soil → Crop → Cultivation → Health → Profit → Market → Sale</h2>
-          <div className="flex flex-wrap justify-center gap-3 text-sm font-medium">
-            {['Soil', 'Crop', 'Cultivation', 'Crop Health', 'Profit', 'Market', 'Sale'].map((step, i) => (
-              <span key={step} className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-white rounded-full shadow-sm text-primary-700">{step}</span>
-                {i < 6 && <ArrowRight className="w-4 h-4 text-primary-400 hidden sm:block" />}
-              </span>
+      {/* ── Lifecycle Flow ── */}
+      <section className="bg-white border-y border-gray-100 py-8">
+        <div className="max-w-6xl mx-auto px-5">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest text-center mb-6">Full farming lifecycle support</p>
+          <div className="flex flex-wrap items-center justify-center gap-1">
+            {LIFECYCLE.map((step, i) => (
+              <div key={step} className="flex items-center gap-1">
+                <span className="px-3 py-1.5 bg-primary-50 text-primary-800 text-xs font-semibold rounded-full border border-primary-100">
+                  {step}
+                </span>
+                {i < LIFECYCLE.length - 1 && (
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+                )}
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8 text-center text-sm">
-        <p>AGRONEON · Team TECH NEON · Smart India Hackathon 2025</p>
-        <p className="mt-1">Problem Statement: Smart Crop Advisory System for Small and Marginal Farmers</p>
+      {/* ── Features ── */}
+      <section className="max-w-6xl mx-auto px-5 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Everything a farmer needs</h2>
+          <p className="text-gray-500 text-sm max-w-lg mx-auto">
+            From soil to sale — AGRONEON guides you through every step with practical, explainable AI.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {FEATURES.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex gap-4 p-5 bg-white rounded-xl border border-gray-200 shadow-card hover:shadow-card-hover hover:border-primary-200 transition-all duration-150">
+              <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 text-primary-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm mb-1">{title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA Banner ── */}
+      <section className="bg-primary-800 text-white py-12">
+        <div className="max-w-3xl mx-auto px-5 text-center">
+          <h2 className="text-2xl font-bold mb-3">Ready to grow smarter?</h2>
+          <p className="text-primary-200 text-sm mb-6">Join AGRONEON and get AI-powered farming guidance from soil to sale.</p>
+          <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-800 font-semibold rounded-lg hover:bg-primary-50 transition-colors">
+            Create Free Account <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="bg-gray-900 text-gray-500 py-6 text-center text-xs">
+        <p className="font-semibold text-gray-400">AGRONEON · Team TECH NEON</p>
+        <p className="mt-1">Smart India Hackathon 2026 · Problem Statement: Smart Crop Advisory for Small & Marginal Farmers</p>
       </footer>
     </div>
   )

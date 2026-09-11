@@ -31,10 +31,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Parse CORS origins
-origins = settings.CORS_ORIGINS
-if isinstance(origins, str):
-    origins = [o.strip() for o in origins.split(",")]
+# Parse CORS origins properly (Handles both Pydantic string defaults and list parsing)
+origins = []
+if isinstance(settings.CORS_ORIGINS, str):
+    origins = [o.strip() for o in settings.CORS_ORIGINS.split(",")]
+elif isinstance(settings.CORS_ORIGINS, list):
+    for origin_item in settings.CORS_ORIGINS:
+        origins.extend([o.strip() for o in origin_item.split(",")])
+
+# Ensure localhost and 127.0.0.1 are symmetrically supported
+for origin in list(origins):
+    if "localhost" in origin:
+        origins.append(origin.replace("localhost", "127.0.0.1"))
+    elif "127.0.0.1" in origin:
+        origins.append(origin.replace("127.0.0.1", "localhost"))
+origins = list(set(origins))
 
 app.add_middleware(
     CORSMiddleware,

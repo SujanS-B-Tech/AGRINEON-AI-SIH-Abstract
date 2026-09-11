@@ -1,29 +1,52 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, LogOut, Globe, Bell, Shield, ChevronRight } from 'lucide-react'
+import { Globe, Bell, Shield, LogOut, ChevronRight, MapPin } from 'lucide-react'
 import DashboardLayout from '../components/DashboardLayout'
+import PageHeader from '../components/PageHeader'
+import { Spinner } from '../components/LoadingState'
 import { useAuth } from '../context/AuthContext'
-import api from '../utils/api'
+
+function SettingRow({ icon: Icon, label, description, action }) {
+  return (
+    <div className="flex items-center justify-between py-3.5 border-b border-gray-100 last:border-b-0">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-gray-500" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-900">{label}</p>
+          {description && <p className="text-xs text-gray-400">{description}</p>}
+        </div>
+      </div>
+      <div className="shrink-0 ml-4">{action}</div>
+    </div>
+  )
+}
+
+// Toggle switch component
+function Toggle({ checked, onChange }) {
+  return (
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" className="sr-only peer" checked={checked} onChange={onChange} />
+      <div className="w-10 h-5 bg-gray-200 peer-checked:bg-primary-600 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all" />
+    </label>
+  )
+}
 
 export default function SettingsPage() {
   const { user, logout, updateUser } = useAuth()
   const navigate = useNavigate()
-  
-  const [loading, setLoading] = useState(false)
-  const [lang, setLang] = useState(user?.language || 'English')
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
 
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
+  const [lang,    setLang]    = useState(user?.language || 'English')
+  const [notifs,  setNotifs]  = useState(true)
+  const [loading, setLoading] = useState(false)
+
+  const handleLogout = () => { logout(); navigate('/') }
 
   const savePreferences = async () => {
     setLoading(true)
     try {
-      // Assuming a PUT /auth/me exists, or just update local context
       updateUser({ language: lang })
-      alert("Preferences saved!")
     } catch (e) {
       console.error(e)
     } finally {
@@ -32,84 +55,103 @@ export default function SettingsPage() {
   }
 
   return (
-    <DashboardLayout title="Settings" subtitle="Manage your account preferences">
-      <div className="max-w-3xl space-y-6">
-        {/* Profile Card */}
+    <DashboardLayout>
+      <PageHeader title="Settings" subtitle="Account and app preferences" />
+
+      <div className="max-w-xl space-y-5">
+        {/* Profile row */}
         <div className="card flex items-center gap-4">
-          <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8" />
+          <div className="w-12 h-12 bg-primary-700 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
+            {user?.name?.charAt(0)?.toUpperCase() || 'F'}
           </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-xl">{user?.name || 'Farmer Profile'}</h3>
-            <p className="text-gray-500 text-sm">{user?.email || 'No email provided'}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900">{user?.name || 'Farmer'}</p>
+            <p className="text-xs text-gray-400 truncate">{user?.email || 'No email provided'}</p>
+            {user?.phone && <p className="text-xs text-gray-400">{user.phone}</p>}
           </div>
-          <button onClick={() => navigate('/farm-profile')} className="btn-outline text-sm py-2">
-            Edit Profile
+          <button onClick={() => navigate('/farm-profile')} className="btn-outline-sm shrink-0">
+            Edit Farm
           </button>
         </div>
 
         {/* Preferences */}
-        <div className="card space-y-2">
-          <h3 className="font-semibold text-lg mb-4">Preferences</h3>
-          
-          <div className="flex justify-between items-center py-3 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900">Language</p>
-                <p className="text-sm text-gray-500">App interface language</p>
-              </div>
-            </div>
-            <select 
-              value={lang} 
-              onChange={e => setLang(e.target.value)}
-              className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2"
-            >
-              <option value="English">English</option>
-              <option value="Tamil">Tamil</option>
-              <option value="Hindi">Hindi</option>
-            </select>
-          </div>
+        <div className="card">
+          <p className="label-sm text-gray-400 mb-4">Preferences</p>
 
-          <div className="flex justify-between items-center py-3 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900">Push Notifications</p>
-                <p className="text-sm text-gray-500">Alerts for tasks & weather</p>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" checked={notificationsEnabled} onChange={() => setNotificationsEnabled(!notificationsEnabled)} />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-            </label>
-          </div>
-          
+          <SettingRow
+            icon={Globe}
+            label="Language"
+            description="Interface and assistant language"
+            action={
+              <select
+                value={lang}
+                onChange={e => setLang(e.target.value)}
+                className="select-field py-1.5 text-sm w-32"
+              >
+                <option value="English">English</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Hindi">Hindi</option>
+              </select>
+            }
+          />
+
+          <SettingRow
+            icon={Bell}
+            label="Push Notifications"
+            description="Alerts for tasks and weather"
+            action={<Toggle checked={notifs} onChange={() => setNotifs(!notifs)} />}
+          />
+
+          <SettingRow
+            icon={MapPin}
+            label="Farm Location"
+            description="Used for weather and market data"
+            action={
+              <button onClick={() => navigate('/farm-profile')} className="btn-ghost-sm">
+                Update <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            }
+          />
+
           <div className="pt-4">
-            <button onClick={savePreferences} disabled={loading} className="btn-primary w-full sm:w-auto">
-              {loading ? 'Saving...' : 'Save Preferences'}
+            <button onClick={savePreferences} disabled={loading} className="btn-primary">
+              {loading ? <><Spinner className="text-white" /> Saving...</> : 'Save Preferences'}
             </button>
           </div>
         </div>
 
-        {/* Security & Account */}
-        <div className="card space-y-2">
-          <h3 className="font-semibold text-lg mb-4">Account</h3>
-          
-          <button className="w-full flex justify-between items-center py-3 border-b border-gray-100 hover:bg-gray-50 px-2 -mx-2 rounded-lg transition-colors">
-            <div className="flex items-center gap-3">
-              <Shield className="w-5 h-5 text-gray-400" />
-              <span className="font-medium text-gray-900">Privacy & Security</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
+        {/* Account */}
+        <div className="card">
+          <p className="label-sm text-gray-400 mb-4">Account</p>
 
-          <button onClick={handleLogout} className="w-full flex justify-between items-center py-3 hover:bg-red-50 hover:text-red-600 px-2 -mx-2 rounded-lg transition-colors text-gray-700">
-            <div className="flex items-center gap-3">
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign Out</span>
-            </div>
-          </button>
+          <div className="divide-y divide-gray-100">
+            <button className="w-full flex items-center justify-between py-3.5 hover:bg-gray-50 -mx-5 px-5 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-gray-500" />
+                </div>
+                <p className="text-sm font-medium text-gray-900">Privacy & Security</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 py-3.5 hover:bg-red-50 -mx-5 px-5 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100">
+                <LogOut className="w-4 h-4 text-red-500" />
+              </div>
+              <p className="text-sm font-medium text-red-600">Sign Out</p>
+            </button>
+          </div>
+        </div>
+
+        {/* Version footer */}
+        <div className="text-center py-2">
+          <p className="text-xs text-gray-400 font-medium">AGRONEON</p>
+          <p className="text-[11px] text-gray-300">Version 1.0.0 · Built by Team TECH NEON</p>
+          <p className="text-[11px] text-gray-300">Smart India Hackathon 2026</p>
         </div>
       </div>
     </DashboardLayout>

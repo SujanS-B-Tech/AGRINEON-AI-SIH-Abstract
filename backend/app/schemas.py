@@ -185,10 +185,14 @@ class CropPlanResponse(BaseModel):
 class DiseaseResponse(BaseModel):
     id: int
     disease_name: Optional[str] = None
-    confidence: Optional[float] = None
+    confidence: Optional[float] = None # Used for model_score
+    confidence_level: Optional[str] = None
+    severity: Optional[str] = None
     symptoms: Optional[list] = None
     prevention: Optional[list] = None
     next_steps: Optional[list] = None
+    crop_protection: Optional[list] = None
+    sources: Optional[list] = None
     image_path: Optional[str] = None
     created_at: Optional[datetime] = None
 
